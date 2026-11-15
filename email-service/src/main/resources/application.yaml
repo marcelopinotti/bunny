@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: email-service
+
+  # variáveis no .env da raiz do projeto (bunny/.env)
+  config:
+    import: optional:file:.env[.properties]
+
+  docker:
+    compose:
+      file: compose.yaml
+      # os dois serviços usam o mesmo compose: não derrubar a infra quando um deles parar
+      lifecycle-management: start-only
+
+  rabbitmq:
+    host: ${RABBIT_HOST}
+    port: ${RABBIT_PORT}
+    username: ${RABBIT_USER}
+    password: ${RABBIT_PASSWORD}
+    virtual-host: ${RABBIT_VHOST}
+    ssl:
+      enabled: ${RABBIT_SSL}
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+# remetente usado pelo EmailService (campo emailFrom)
+email:
+  from: ${MAIL_FROM}
+
+aws:
+  region: ${AWS_REGION}
+  dynamodb:
+    table: ${DYNAMODB_EMAIL_TABLE}
+    endpoint: ${DYNAMODB_ENDPOINT:}
+
+server:
+  port: 8080

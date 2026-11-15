@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: user-service
+  # variáveis no .env da raiz do projeto (bunny/.env)
+  config:
+    import: optional:file:.env[.properties]
+
+  docker:
+    compose:
+      file: compose.yaml
+      # os dois serviços usam o mesmo compose: não derrubar a infra quando um deles parar
+      lifecycle-management: start-only
+
+aws:
+  region: ${AWS_REGION}
+  dynamodb:
+    table: ${DYNAMODB_USER_TABLE}
+    endpoint: ${DYNAMODB_ENDPOINT:}
+
+server:
+  port: 8081
