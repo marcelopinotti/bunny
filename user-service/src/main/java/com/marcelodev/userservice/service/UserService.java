@@ -1,0 +1,25 @@
+package com.marcelodev.userservice.service;
+
+import com.marcelodev.userservice.domain.UserModel;
+import com.marcelodev.userservice.repository.UserModelRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+ private final UserModelRepository repository;
+
+ public UserModel save(UserModel user) {
+  // gerados por requisição, nunca em campo estático (SnapStart)
+  user.setId(UUID.randomUUID());
+  user.setCreatedAt(Instant.now());
+  return repository.save(user);
+ }
+
+
+}
