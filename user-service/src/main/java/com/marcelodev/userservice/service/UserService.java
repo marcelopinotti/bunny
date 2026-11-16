@@ -13,17 +13,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
- private final UserModelRepository repository;
- private final UserProducer producer;
+    private final UserModelRepository repository;
+    private final UserProducer producer;
 
- public UserModel save(UserModel user) {
-  // gerados por requisição, nunca em campo estático (SnapStart)
-  user.setId(UUID.randomUUID());
-  user.setCreatedAt(Instant.now());
-  UserModel saved = repository.save(user);
-  producer.publishWelcomeEmail(saved);
-  return saved;
- }
+    public UserModel save(UserModel user) {
+        // gerados por requisição, nunca em campo estático (SnapStart)
+        user.setId(UUID.randomUUID());
+        user.setCreatedAt(Instant.now());
+        UserModel saved = repository.save(user);
+        producer.convertAndSend(saved);
+        return saved;
+    }
 
 
 }
