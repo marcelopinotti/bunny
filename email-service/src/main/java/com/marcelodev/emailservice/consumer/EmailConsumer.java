@@ -1,5 +1,6 @@
 package com.marcelodev.emailservice.consumer;
 
+import com.marcelodev.emailservice.dto.EmailDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.context.annotation.Bean;
@@ -13,8 +14,8 @@ public class EmailConsumer {
 
 
     @RabbitListener(queues = "email-queue")
-    public void consume(@Payload String message) {
-        log.info("Received message: {}", message);
+    public void consume(@Payload EmailDto dto) {
+        log.info("Received message: {}", dto);
     }
 
 }
