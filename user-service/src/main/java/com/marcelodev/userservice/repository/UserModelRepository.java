@@ -22,6 +22,7 @@ public class UserModelRepository {
 
     private static final String NOT_EXISTS = "attribute_not_exists(id)";
 
+    private static final String CONDITION_FAILED = "ConditionalCheckFailed";
     private final DynamoDbClient client;
     private final DynamoDbTable<UserModel> table;
 
@@ -31,8 +32,7 @@ public class UserModelRepository {
         this.table = enhanced.table(tableName, TableSchema.fromBean(UserModel.class));
     }
 
-    // DynamoDB não tem UNIQUE: grava o usuário e um item "EMAIL#<email>" na mesma transação.
-    // Se o item do email já existe, a transação inteira falha e nada é gravado.
+    // DynamoDB não tem UNIQUE: o marcador EMAIL#<email> é gravado na mesma transação do usuário
     public UserModel save(UserModel user) {
         var userPut = TransactWriteItem.builder()
                 .put(p -> p
@@ -49,7 +49,9 @@ public class UserModelRepository {
         try {
             client.transactWriteItems(r -> r.transactItems(userPut, emailPut));
         } catch (TransactionCanceledException e) {
-            throw new EmailAlreadyUsedException(user.getEmail());
+            // só é email duplicado se a condição do marcador (item 1) falhou
+            if (conditionFailed(e, 1)) throw new EmailAlreadyUsedException(user.getEmail());
+            throw e;
         }
         return user;
     }
@@ -60,6 +62,10 @@ public class UserModelRepository {
                 .build()));
     }
 
+    private static boolean conditionFailed(TransactionCanceledException e, int itemIndex) {
+        var reasons = e.cancellationReasons();
+        return reasons.size() > itemIndex && CONDITION_FAILED.equals(reasons.get(itemIndex).code());
+    }
     private static String emailKey(String email) {
         return "EMAIL#" + email.trim().toLowerCase(Locale.ROOT);
     }
