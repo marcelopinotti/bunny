@@ -1,5 +1,6 @@
 package com.marcelodev.userservice.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import com.marcelodev.userservice.domain.UserModel;
 import org.springframework.boot.ApplicationRunner;
@@ -16,6 +17,7 @@ import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException;
 import java.net.URI;
 
 @Configuration
+@Slf4j
 public class DynamoDbConfig {
 
     @Bean
@@ -23,7 +25,6 @@ public class DynamoDbConfig {
                                   @Value("${aws.dynamodb.endpoint:}") String endpoint) {
         var builder = DynamoDbClient.builder().region(Region.of(region));
         if (!endpoint.isBlank()) {
-            // DynamoDB Local aceita qualquer credencial; na AWS vale a cadeia padrão (IAM role)
             builder.endpointOverride(URI.create(endpoint))
                     .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("local", "local")));
         }
@@ -44,7 +45,7 @@ public class DynamoDbConfig {
             try {
                 client.table(table, TableSchema.fromBean(UserModel.class)).createTable();
             } catch (ResourceInUseException alreadyExists) {
-                // tabela já existe
+                log.debug("A tabela DynamoDB '{}' já existe.", table);
             }
         };
     }
