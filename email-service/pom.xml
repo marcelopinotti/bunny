@@ -99,6 +99,18 @@
     <build>
         <plugins>
             <plugin>
+                <!-- .env e compose.yaml são relativos à raiz do repo -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <workingDirectory>${project.basedir}/..</workingDirectory>
+                    <systemPropertyVariables>
+                        <!-- não consumir a fila real durante os testes -->
+                        <spring.rabbitmq.listener.simple.auto-startup>false</spring.rabbitmq.listener.simple.auto-startup>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
