@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -12,6 +13,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +62,32 @@ public class UserModelRepository {
         return Optional.ofNullable(table.getItem(Key.builder()
                 .partitionValue(id.toString())
                 .build()));
+    }
+
+    // exclui os marcadores EMAIL#, que não têm createdAt
+    public List<UserModel> findAll() {
+        var onlyUsers = Expression.builder().expression("attribute_exists(createdAt)").build();
+        return table.scan(r -> r.filterExpression(onlyUsers)).items().stream().toList();
+    }
+
+    public boolean deleteById(UUID id) {
+        Optional<UserModel> user = findById(id);
+        if (user.isEmpty()) return false;
+        String email = user.get().getEmail();
+        // garante que o usuário não mudou entre a leitura e o delete
+        var userDelete = TransactWriteItem.builder().delete(d -> d.tableName(table.tableName())
+                .key(Map.of("id", AttributeValue.fromS(id.toString())))
+                .conditionExpression("email = :email")
+                .expressionAttributeValues(Map.of(":email", AttributeValue.fromS(email)))).build();
+        var emailDelete = TransactWriteItem.builder().delete(d -> d.tableName(table.tableName())
+                .key(Map.of("id", AttributeValue.fromS(emailKey(email))))).build();
+        try {
+            client.transactWriteItems(r -> r.transactItems(userDelete, emailDelete));
+        } catch (TransactionCanceledException e) {
+            if (conditionFailed(e, 0)) return false;
+            throw e;
+        }
+        return true;
     }
 
     private static boolean conditionFailed(TransactionCanceledException e, int itemIndex) {

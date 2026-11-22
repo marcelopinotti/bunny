@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -25,5 +26,11 @@ public class UserService {
         return saved;
     }
 
+    public List<UserModel> findAll() {
+        return repository.findAll();
+    }
 
+    public boolean deleteById(UUID id) {
+        return repository.deleteById(id);
+    }
 }

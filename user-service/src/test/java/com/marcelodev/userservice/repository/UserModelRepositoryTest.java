@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,6 +24,39 @@ class UserModelRepositoryTest {
 
     @Test
     void emailIsUnique() {
+        var repo = repo();
+
+        var email = UUID.randomUUID() + "@x.com";
+        var first = user(email);
+        repo.save(first);
+        assertEquals(email, repo.findById(first.getId()).orElseThrow().getEmail());
+
+        var dup = user("  " + email.toUpperCase() + " ");
+        assertThrows(UserModelRepository.EmailAlreadyUsedException.class, () -> repo.save(dup));
+        assertTrue(repo.findById(dup.getId()).isEmpty());
+    }
+
+    @Test
+    void deleteByIdRemovesUserAndFreesEmail() {
+        var repo = repo();
+        var email = UUID.randomUUID() + "@x.com";
+        var first = user(email);
+        repo.save(first);
+
+        assertTrue(repo.deleteById(first.getId()));
+        assertTrue(repo.findById(first.getId()).isEmpty());
+
+        var again = user(email);
+        repo.save(again);
+        assertTrue(repo.findById(again.getId()).isPresent());
+    }
+
+    @Test
+    void deleteByIdReturnsFalseWhenUserDoesNotExist() {
+        assertFalse(repo().deleteById(UUID.randomUUID()));
+    }
+
+    private static UserModelRepository repo() {
         var raw = DynamoDbClient.builder()
                 .region(Region.US_EAST_1)
                 .endpointOverride(URI.create("http://localhost:8000"))
@@ -33,17 +67,7 @@ class UserModelRepositoryTest {
             enhanced.table("users-test", TableSchema.fromBean(UserModel.class)).createTable();
         } catch (ResourceInUseException ignored) {
         }
-        var repo = new UserModelRepository(raw, enhanced, "users-test");
-
-        var email = UUID.randomUUID() + "@x.com";
-        var first = user(email);
-        repo.save(first);
-        assertEquals(email, repo.findById(first.getId()).orElseThrow().getEmail());
-
-        // mesmo email com outra caixa e espaços: tem que ser barrado, e o segundo usuário não pode ter sido gravado
-        var dup = user("  " + email.toUpperCase() + " ");
-        assertThrows(UserModelRepository.EmailAlreadyUsedException.class, () -> repo.save(dup));
-        assertTrue(repo.findById(dup.getId()).isEmpty());
+        return new UserModelRepository(raw, enhanced, "users-test");
     }
 
     private static UserModel user(String email) {
