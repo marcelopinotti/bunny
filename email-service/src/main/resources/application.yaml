@@ -20,6 +20,14 @@ spring:
     virtual-host: ${RABBIT_VHOST}
     ssl:
       enabled: ${RABBIT_SSL}
+    # reentrega até 3x (2s, 4s, 8s) quando o EmailService lança exceção
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-retries: 3
+          initial-interval: 2s
+          multiplier: 2
 
   mail:
     host: ${MAIL_HOST}
@@ -41,7 +49,7 @@ aws:
   region: ${AWS_REGION}
   dynamodb:
     table: ${DYNAMODB_EMAIL_TABLE}
-    endpoint: ${DYNAMODB_ENDPOINT:}
+    endpoint: ${DYNAMODB_ENDPOINT}
 
 server:
   port: 8080

@@ -29,7 +29,6 @@ public class DynamoDbConfig {
     DynamoDbClient dynamoDbClient(@Value("${aws.region}") String region) {
         var builder = DynamoDbClient.builder().region(Region.of(region));
         if (local()) {
-            // DynamoDB Local aceita qualquer credencial; na AWS vale a cadeia padrão (IAM role da Lambda)
             builder.endpointOverride(URI.create(endpoint))
                     .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("local", "local")));
         }
@@ -41,7 +40,6 @@ public class DynamoDbConfig {
         return DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
     }
 
-    // ponytail: só no ambiente local a app cria a tabela; na AWS quem cria é o Terraform
     @Bean
     ApplicationRunner createLocalTable(DynamoDbEnhancedClient client, @Value("${aws.dynamodb.table}") String table) {
         return args -> {
@@ -49,7 +47,6 @@ public class DynamoDbConfig {
             try {
                 client.table(table, TableSchema.fromBean(EmailModel.class)).createTable();
             } catch (ResourceInUseException alreadyExists) {
-                // tabela já existe
             }
         };
     }

@@ -17,7 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EmailModel {
 
-    // id do evento vindo da mensagem (eventId), não gerado aqui: é a chave de idempotência
+    // eventId da mensagem: chave de idempotência
     @Getter(onMethod_ = @DynamoDbPartitionKey)
     private UUID id;
 

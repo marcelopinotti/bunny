@@ -17,7 +17,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// Precisa do DynamoDB Local rodando: docker compose -f email-service/compose.yaml up dynamodb
+// Precisa do DynamoDB Local rodando: docker compose up -d (na raiz)
 class EmailModelRepositoryTest {
 
     @Test
