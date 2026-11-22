@@ -29,10 +29,13 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
-# remetente usado pelo EmailService (campo emailFrom)
 email:
-  from: ${MAIL_FROM}
+  from: ${MAIL_FROM:${MAIL_USERNAME}}
 
 aws:
   region: ${AWS_REGION}
