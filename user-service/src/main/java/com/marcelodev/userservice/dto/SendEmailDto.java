@@ -1,8 +1,11 @@
 package com.marcelodev.userservice.dto;
 
+import java.util.UUID;
+
+
 public record SendEmailDto(
-        String eventId,
-        String ownerRef,
+        UUID eventId,
+        UUID ownerRef,
         String to,
         String subject,
         String body

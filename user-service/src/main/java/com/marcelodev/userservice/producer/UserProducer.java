@@ -2,11 +2,13 @@ package com.marcelodev.userservice.producer;
 
 
 import com.marcelodev.userservice.domain.UserModel;
-import com.marcelodev.userservice.dto.EmailDto;
+import com.marcelodev.userservice.dto.SendEmailDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.UUID;
 
 
 @Component
@@ -20,12 +22,13 @@ public class UserProducer {
 
 
     public void convertAndSend(UserModel user) {
-        EmailDto emailDto = new EmailDto();
-        emailDto.setId(user.getId());
-        emailDto.setEmailTo(user.getEmail());
-        emailDto.setSubject("Bem-vindo ao nosso sistema!");
-        emailDto.setText("Olá " + user.getName() + ", obrigado por se cadastrar em nosso sistema!");
+        var message = new SendEmailDto(
+                UUID.randomUUID(),
+                user.getId(),
+                user.getEmail(),
+                "Bem-vindo ao nosso sistema!",
+                "Olá " + user.getName() + ", obrigado por se cadastrar em nosso sistema!");
 
-        rabbitTemplate.convertAndSend("",rountingKey,emailDto);
+        rabbitTemplate.convertAndSend("", rountingKey, message);
     }
 }
