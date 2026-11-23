@@ -31,3 +31,8 @@ variable "dlq_retention_days" {
     error_message = "O SQS guarda mensagens por no máximo 14 dias."
   }
 }
+
+variable "sender_email" {
+  description = "Email do remetente, que será usado para enviar mensagens via SES."
+  type        = string
+}
