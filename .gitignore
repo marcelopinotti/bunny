@@ -1,2 +1,6 @@
 .env
 docs/migracao-serverless.md
+infra/.terraform
+*.tfstate
+*.tfstate.*
+infra/terraform.tfvars
