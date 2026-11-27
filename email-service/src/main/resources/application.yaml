@@ -36,7 +36,7 @@ aws:
   region: ${AWS_REGION}
   dynamodb:
     table: ${DYNAMODB_EMAIL_TABLE}
-    endpoint: ${DYNAMODB_ENDPOINT}
+    endpoint: ${DYNAMODB_ENDPOINT:} # vazio (ou ausente, como na Lambda) = DynamoDB da AWS
 
 server:
   port: 8080
