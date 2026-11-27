@@ -4,6 +4,7 @@ resource "aws_sqs_queue" "email" {
     deadLetterTargetArn = aws_sqs_queue.email_dlq.arn
     maxReceiveCount     = var.email_max_receive_count
   })
+  visibility_timeout_seconds = 6 * aws_lambda_function.email.timeout
 
 }
 
