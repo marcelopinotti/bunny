@@ -6,10 +6,9 @@ import com.marcelodev.emailservice.dto.SendEmailDto;
 import com.marcelodev.emailservice.repository.EmailModelRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
 
 import java.time.Instant;
 
@@ -18,13 +17,13 @@ import java.time.Instant;
 public class EmailService {
 
     private final EmailModelRepository repository;
-    private final JavaMailSender mailSender;
+    private final SesV2Client ses;
     private final String from;
 
-    public EmailService(EmailModelRepository repository, JavaMailSender mailSender,
+    public EmailService(EmailModelRepository repository, SesV2Client ses,
                         @Value("${email.from}") String from) {
         this.repository = repository;
-        this.mailSender = mailSender;
+        this.ses = ses;
         this.from = from;
     }
 
@@ -38,25 +37,25 @@ public class EmailService {
         }
 
         try {
-            mailSender.send(toMailMessage(dto));
+            sendViaSes(dto);
             email.setStatusEmail(StatusEmail.SENT);
             log.info("email do evento {} enviado para {}", dto.eventId(), dto.to());
-        } catch (MailException e) {
+        } catch (SdkException e) {
             log.error("falha ao enviar email do evento {} para {}: {}", dto.eventId(), dto.to(), e.getMessage(), e);
             email.setStatusEmail(StatusEmail.FAILED);
             repository.save(email);
-            throw e; // o RabbitMQ entrega de novo (retry no application.yaml)
+            throw e; // a mensagem volta para a fila (retry do Rabbit ou reentrega do SQS)
         }
 
         repository.save(email);
     }
 
-    private SimpleMailMessage toMailMessage(SendEmailDto dto) {
-        var message = new SimpleMailMessage();
-        message.setFrom(from);
-        message.setTo(dto.to());
-        message.setSubject(dto.subject());
-        message.setText(dto.body());
-        return message;
+    private void sendViaSes(SendEmailDto dto) {
+        ses.sendEmail(r -> r
+                .fromEmailAddress(from)
+                .destination(d -> d.toAddresses(dto.to()))
+                .content(c -> c.simple(m -> m
+                        .subject(s -> s.data(dto.subject()))
+                        .body(b -> b.text(t -> t.data(dto.body()))))));
     }
 }
