@@ -9,3 +9,11 @@ output "emails_table_name" {
 output "email_queue_url" {
   value = aws_sqs_queue.email.url
 }
+
+output "user_service_role_arn" {
+  value = aws_iam_role.user_service.arn
+}
+
+output "github_deploy_role_arn" {
+  value = aws_iam_role.github_deploy.arn
+}

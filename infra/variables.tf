@@ -36,3 +36,9 @@ variable "sender_email" {
   description = "Email do remetente, que será usado para enviar mensagens via SES."
   type        = string
 }
+
+variable "github_repo" {
+  description = "Repositório (dono/nome) que pode fazer deploy pelo GitHub Actions."
+  type        = string
+  default     = "marcelopinotti/bunny"
+}

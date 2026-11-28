@@ -1,0 +1,53 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    paths: [email-service/**, infra/**, .github/workflows/deploy.yml]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency: deploy # dois applies ao mesmo tempo brigariam pelo lock do state
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:3.3.0
+        ports: ["8000:8000"]
+    env:
+      AWS_REGION: us-east-1
+      DYNAMODB_ENDPOINT: http://localhost:8000
+      DYNAMODB_EMAIL_TABLE: emails
+      EMAIL_FROM: ${{ vars.SENDER_EMAIL }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: build e testes (gera o zip da Lambda)
+        working-directory: email-service
+        run: sh mvnw -B package
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: terraform apply
+        working-directory: infra
+        env:
+          TF_VAR_sender_email: ${{ vars.SENDER_EMAIL }}
+        run: |
+          terraform init -input=false
+          terraform apply -input=false -auto-approve
