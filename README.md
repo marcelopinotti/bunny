@@ -1,4 +1,4 @@
-# Bunny - Serverless Event-Driven Email [![My Skills](https://skillicons.dev/icons?i=java,spring,aws,dynamodb,terraform,githubactions,docker,maven)](https://skillicons.dev)
+# Bunny - Serverless Event-Driven Email [![My Skills](https://skillicons.dev/icons?i=java,spring,aws,dynamodb,terraform,githubactions,docker,rabbitmq)](https://skillicons.dev)
 
 Sistema de cadastro de usuários com envio de email de boas-vindas **orientado a eventos** e **100% serverless na AWS**. O `user-service` publica um evento no **SQS**, que aciona uma **Lambda Java com SnapStart**. A Lambda envia o email pelo **SES** e registra o status no **DynamoDB**, de forma **idempotente**, com **falha parcial de lote** e **dead-letter queue**. Toda a infraestrutura é provisionada com **Terraform** e o deploy é feito pelo **GitHub Actions via OIDC**, sem nenhuma access key.
 
