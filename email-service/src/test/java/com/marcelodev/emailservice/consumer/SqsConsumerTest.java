@@ -22,7 +22,7 @@ class SqsConsumerTest {
 
     // igual ao init da Lambda; precisa do DynamoDB Local rodando: docker compose up -d (na raiz)
     @Test
-    void lambdaInitBootsSpringWithoutWebAndRabbit() {
+    void lambdaInitBootsSpringWithoutWeb() {
         assertDoesNotThrow(() -> new SqsConsumer());
     }
 

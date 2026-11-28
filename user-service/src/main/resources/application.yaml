@@ -11,15 +11,6 @@ spring:
       # os dois serviços usam o mesmo compose: não derrubar a infra quando um deles parar
       lifecycle-management: start-only
 
-  rabbitmq:
-    host: ${RABBIT_HOST}
-    port: ${RABBIT_PORT}
-    username: ${RABBIT_USER}
-    password: ${RABBIT_PASSWORD}
-    virtual-host: ${RABBIT_VHOST}
-    ssl:
-      enabled: ${RABBIT_SSL}
-
 aws:
   region: ${AWS_REGION}
   dynamodb:

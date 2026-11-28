@@ -31,10 +31,6 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
-        <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb-enhanced</artifactId>
         </dependency>
@@ -60,11 +56,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp-test</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -108,10 +99,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <workingDirectory>${project.basedir}/..</workingDirectory>
-                    <systemPropertyVariables>
-                        <!-- não consumir a fila real durante os testes -->
-                        <spring.rabbitmq.listener.simple.auto-startup>false</spring.rabbitmq.listener.simple.auto-startup>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

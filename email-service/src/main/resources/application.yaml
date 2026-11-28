@@ -12,23 +12,6 @@ spring:
       # os dois serviços usam o mesmo compose: não derrubar a infra quando um deles parar
       lifecycle-management: start-only
 
-  rabbitmq:
-    host: ${RABBIT_HOST}
-    port: ${RABBIT_PORT}
-    username: ${RABBIT_USER}
-    password: ${RABBIT_PASSWORD}
-    virtual-host: ${RABBIT_VHOST}
-    ssl:
-      enabled: ${RABBIT_SSL}
-    # reentrega até 3x (2s, 4s, 8s) quando o EmailService lança exceção
-    listener:
-      simple:
-        retry:
-          enabled: true
-          max-retries: 3
-          initial-interval: 2s
-          multiplier: 2
-
 email:
   from: ${EMAIL_FROM} # identidade verificada no SES (var.sender_email do Terraform)
 

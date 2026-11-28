@@ -4,14 +4,3 @@ services:
     command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
     ports:
       - "8000:8000"
-
-  rabbitmq:
-    image: rabbitmq:4.2.9-alpine
-    labels:
-      # conexão vem sempre do .env (local ou CloudAMQP); sem isso o docker-compose do Spring sobrescreve host/porta
-      org.springframework.boot.ignore: "true"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
-    ports:
-      - "5672:5672"

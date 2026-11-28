@@ -44,7 +44,7 @@ public class EmailService {
             log.error("falha ao enviar email do evento {} para {}: {}", dto.eventId(), dto.to(), e.getMessage(), e);
             email.setStatusEmail(StatusEmail.FAILED);
             repository.save(email);
-            throw e; // a mensagem volta para a fila (retry do Rabbit ou reentrega do SQS)
+            throw e; // o SqsConsumer reporta a falha e o SQS reentrega (DLQ após maxReceiveCount)
         }
 
         repository.save(email);

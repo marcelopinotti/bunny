@@ -24,9 +24,7 @@ public class SqsConsumer implements RequestHandler<SQSEvent, SQSBatchResponse> {
     public SqsConsumer() { // a Lambda chama no init; o Spring entra no snapshot do SnapStart
         var ctx = new SpringApplicationBuilder(EmailServiceApplication.class)
                 .web(WebApplicationType.NONE)
-                .properties(
-                        "spring.autoconfigure.exclude=org.springframework.boot.amqp.autoconfigure.RabbitAutoConfiguration",
-                        "spring.docker.compose.enabled=false")
+                .properties("spring.docker.compose.enabled=false")
                 .run();
         this.emailService = ctx.getBean(EmailService.class);
         this.jsonMapper = ctx.getBean(JsonMapper.class);
