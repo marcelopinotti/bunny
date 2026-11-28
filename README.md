@@ -1,6 +1,6 @@
-# Bunny <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/java/java-original.svg" height="36" alt="Java"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/spring/spring-original.svg" height="36" alt="Spring"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" height="36" alt="AWS"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/dynamodb/dynamodb-original.svg" height="36" alt="DynamoDB"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/terraform/terraform-original.svg" height="36" alt="Terraform"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/githubactions/githubactions-original.svg" height="36" alt="GitHub Actions"/>
+# Bunny <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/java/java-original.svg" height="36" alt="Java"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/spring/spring-original.svg" height="36" alt="Spring"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" height="36" alt="AWS"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/dynamodb/dynamodb-original.svg" height="36" alt="DynamoDB"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/terraform/terraform-original.svg" height="36" alt="Terraform"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/githubactions/githubactions-original.svg" height="36" alt="GitHub Actions"/> <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/docker/docker-original.svg" height="36" alt="Docker"/>
 
-Microsserviços orientados a eventos que começaram como Spring Boot + RabbitMQ rodando local e foram migrados para **serverless na AWS** (SQS, Lambda com SnapStart, SES e DynamoDB), com toda a infraestrutura em **Terraform** e deploy pelo **GitHub Actions via OIDC**, sem nenhuma chave de acesso guardada em lugar nenhum.
+Microsserviços orientados a eventos em Spring Boot, **serverless na AWS** (SQS, Lambda com SnapStart, SES e DynamoDB), com toda a infraestrutura em **Terraform** e deploy pelo **GitHub Actions via OIDC**, sem nenhuma chave de acesso guardada em lugar nenhum.
 
 Quando um usuário se cadastra, o `user-service` publica um evento. O `email-service`, uma Lambda, consome o evento, envia o email de boas-vindas pelo SES e registra o resultado no DynamoDB, garantindo que **cada evento gera no máximo um email** mesmo com entregas repetidas.
 
@@ -16,28 +16,13 @@ O objetivo foi praticar, ponta a ponta, os problemas que aparecem em sistemas di
 - **Cold start do Java em Lambda.** Spring Boot em Lambda é viável?
 - **Custo.** Quanto custa deixar isso no ar com pouco tráfego?
 - **Segurança.** Menor privilégio para cada peça e CI sem segredo de longa duração.
-- **Migração sem reescrita.** A regra de negócio foi escrita na fase 1 já pensando na fase 2. Quando o RabbitMQ virou SQS e o listener virou handler de Lambda, o `EmailService` não mudou.
+- **Regra de negócio isolada da infraestrutura.** O handler da Lambda é só uma porta de entrada: o `EmailService` não conhece SQS nem Lambda.
 
 ---
 
 ## Arquitetura
 
-```mermaid
-flowchart LR
-    C([Cliente]) -->|POST /users| U[user-service<br/>Spring Boot · :8081]
-    U -->|TransactWriteItems<br/>usuário + EMAIL#| DU[(DynamoDB<br/>users)]
-    U -->|SendMessage<br/>JSON + eventId| Q[[SQS<br/>email-queue]]
-
-    subgraph AWS
-        Q -->|event source mapping<br/>lote de 10 · ReportBatchItemFailures| L[Lambda email-service<br/>Java 21 · SnapStart · alias live]
-        Q -.->|após 3 recepções| DLQ[[SQS<br/>email-dlq]]
-        L -->|PutItem condicional<br/>idempotência| DE[(DynamoDB<br/>emails)]
-        L -->|SendEmail| SES[SES]
-    end
-
-    SES --> D([Destinatário])
-    GH[GitHub Actions] -->|OIDC → role| TF[Terraform] -.->|apply| AWS
-```
+![Arquitetura na AWS](docs/arquitetura.png)
 
 **O fluxo:**
 1. `POST /users` grava o usuário no DynamoDB numa transação que também garante que o email é único.
@@ -46,22 +31,25 @@ flowchart LR
 4. Para cada mensagem, a Lambda **reserva** o `eventId` no DynamoDB (`PENDING`), envia pelo SES e grava `SENT` ou `FAILED`.
 5. Só as mensagens que falharam voltam para a fila. Depois de 3 recepções, o SQS move a mensagem para a `email-dlq`.
 
-<details>
-<summary>Diagramas desenhados no planejamento (fase 1 e fase 2)</summary>
-
-Os diagramas abaixo foram exportados do [`docs/arquitetura.drawio`](docs/arquitetura.drawio). O da fase 2 é o **plano original**: na implementação, o handler virou um `RequestHandler` próprio em vez de Spring Cloud Function, e o SES ainda está no sandbox.
-
-![Arquitetura da fase 1](docs/arquitetura-fase1.png)
-![Arquitetura da fase 2](docs/arquitetura-fase2.png)
-
-</details>
-
 ---
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
+| | Camada | Tecnologia |
+|:-:|---|---|
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/java/java-original.svg" height="20" alt="Java"/> | Linguagem | Java 21 |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/spring/spring-original.svg" height="20" alt="Spring"/> | Framework | Spring Boot 4.1 (Web MVC, Validation), Jackson 3 |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" height="20" alt="AWS"/> | Mensageria | Amazon SQS + dead-letter queue |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" height="20" alt="AWS"/> | Compute | AWS Lambda (`java21`, 1024 MB, SnapStart, alias `live`) |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/dynamodb/dynamodb-original.svg" height="20" alt="DynamoDB"/> | Banco | DynamoDB on-demand com AWS SDK v2 **Enhanced Client** (sem Spring Data/JPA), PITR e proteção contra delete |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" height="20" alt="AWS"/> | Email | Amazon SES (API v2, `SesV2Client`) |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/terraform/terraform-original.svg" height="20" alt="Terraform"/> | Infra como código | Terraform (provider AWS 6.x), state no S3 com lock nativo (`use_lockfile`) |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/githubactions/githubactions-original.svg" height="20" alt="GitHub Actions"/> | CI/CD | GitHub Actions + OIDC (sem access key) |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/docker/docker-original.svg" height="20" alt="Docker"/> | Local | Docker Compose com DynamoDB Local |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/junit/junit-original.svg" height="20" alt="JUnit"/> | Testes | JUnit 5, Mockito, MockMvc, DynamoDB Local |
+| <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/maven/maven-original.svg" height="20" alt="Maven"/> | Build | Maven (um projeto por serviço), zip da Lambda com `maven-assembly-plugin` |
+
+---|---|
 | Linguagem | Java 21 |
 | Framework | Spring Boot 4.1 (Web MVC, Validation), Jackson 3 |
 | Mensageria | Amazon SQS + dead-letter queue |
@@ -122,12 +110,12 @@ DynamoDB em vez de banco relacional foi uma decisão de custo. Na AWS, um RDS fi
 | Lambda + RDS | ~US$ 15–50+ |
 | Fargate + RDS | ~US$ 40+ |
 
-Pelo mesmo motivo, o RabbitMQ (CloudAMQP) foi trocado por SQS: a Lambda não pode ser acionada por um broker externo, e manter um consumidor ligado 24 h deixaria de ser serverless.
+Pelo mesmo motivo, a fila é SQS e não um broker como RabbitMQ: a Lambda não é acionada por broker externo, e manter um consumidor ligado 24 h deixaria de ser serverless.
 
-### Código preparado para a migração
+### Código desacoplado
 
-- **Handler fino.** O `SqsConsumer` só desserializa e chama `EmailService.send(dto)`. Na fase 1, o `@RabbitListener` fazia exatamente o mesmo, por isso trocar um pelo outro não mexeu na regra de negócio.
-- **Contrato em JSON puro**, sem serialização Java nem o header `__TypeId__` do Spring AMQP. O SQS só transporta texto.
+- **Handler fino.** O `SqsConsumer` só desserializa e chama `EmailService.send(dto)`. Trocar a origem dos eventos não mexe na regra de negócio.
+- **Contrato em JSON puro**, sem serialização Java nem headers de framework: qualquer produtor que escreva o JSON funciona.
 
 ---
 
@@ -300,17 +288,3 @@ bunny/
 - **SES no sandbox.** Só envia para endereços verificados, com limite de 200 por dia.
 - **Listagem sem paginação.** `GET /users` lê a tabela inteira com `Scan`.
 - **Versões da Lambda acumulam** a cada deploy, e o log group não tem retenção configurada.
-
-## Roadmap
-
-- [x] Fase 1: user-service → RabbitMQ → email-service → DynamoDB + SMTP
-- [x] Terraform: SQS + DLQ, DynamoDB, SES, IAM, state remoto no S3
-- [x] `email-service` como Lambda com SnapStart, SMTP → SES
-- [x] Event source mapping com falha parcial de lote e DLQ testada
-- [x] `user-service` publicando no SQS com role de menor privilégio
-- [x] GitHub Actions com OIDC
-- [x] RabbitMQ removido
-- [ ] `user-service` como Lambda atrás de um API Gateway
-- [ ] Alarmes no CloudWatch (mensagens na DLQ, erros da Lambda)
-- [ ] Sair do sandbox do SES
-- [ ] Priming com CRaC para reduzir ainda mais o restore
