@@ -38,7 +38,7 @@ variable "sender_email" {
 }
 
 variable "github_repo" {
-  description = "Repositório (dono/nome) que pode fazer deploy pelo GitHub Actions."
+  description = "Repositório que pode fazer deploy, no formato imutável do sub OIDC (dono@id/repo@id): gh api repos/OWNER/REPO/actions/oidc/customization/sub"
   type        = string
-  default     = "marcelopinotti/bunny"
+  default     = "marcelopinotti@203372727/bunny@1403842661"
 }
