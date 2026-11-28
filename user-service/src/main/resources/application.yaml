@@ -25,6 +25,8 @@ aws:
   dynamodb:
     table: ${DYNAMODB_USER_TABLE}
     endpoint: ${DYNAMODB_ENDPOINT:}
+  sqs:
+    email-queue-url: ${EMAIL_QUEUE_URL}
 
 server:
   port: 8081
